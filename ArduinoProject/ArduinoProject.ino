@@ -3,8 +3,9 @@
 #include "Arduino_Wifi_Connect.h"
 #include "WiFiS3.h"
 #include <WiFiClient.h>
-#include <HttpClient.h>
 #include <Arduino_JSON.h>
+#include <Bridge.h>
+#include <HttpClient.h>
 
 ArduinoLEDMatrix matrix;
 
@@ -16,17 +17,14 @@ int led =  LED_BUILTIN;
 int status = WL_IDLE_STATUS;
 
 WiFiServer server(80);
-WiFiClient client;
-HttpClient http(client);
+WiFiClient wifi_client;
+HttpClient http_client;
 
-
-const String api_key = "xxx";
-const String city_name = "Timisoara"; // Or the city for which you want to retrieve weather data
-const String city_code = "RO";
-const String server_path = "http://api.openweathermap.org/data/2.5/weather?q=" + city_name + ","+ city_code + "&APPID=" + api_key;
+//const char * server_name = "www.google.com";    // name address for Google (using DNS)
+const char * server_name = "http://api.openweathermap.org/data/2.5/weather?q=Timisoara,RO&APPID=xxx";
 int loop_counter = 0;
 
-const char * server_name = "www.google.com";    // name address for Google (using DNS)
+
 
 void setup() 
 {
@@ -42,7 +40,7 @@ void setup()
   
   setup_wifi_connection();
 
-  print_initial_wifi_status();
+  //print_initial_wifi_status();
 
   setup_http_connection();
 }
@@ -53,7 +51,7 @@ void loop()
   delay(10000);
 
   print_loop_counter();
-  print_current_wifi_status();
+  //print_current_wifi_status();
 
   continue_http_connection();
 
@@ -66,50 +64,37 @@ void setup_http_connection()
 {
   Serial.println("\nStarting connection to server...");
 
-  if (client.connect(server_name, 80)) {
+  unsigned int http_code = http_client.get(server_name);
 
-    Serial.println("connected to server");
-
-    // Make a HTTP request:
-
-    client.println("GET /search?q=arduino HTTP/1.1");
-
-    client.println("Host: www.google.com");
-
-    client.println("Connection: close");
-
-    client.println();
-
+  if(http_client.available())
+  {
+    Serial.println("Connected to server successfully!");
   }
+  else
+  {
+    Serial.println("Connection to server failed!");
+    while(true);
+  }
+  
 }
 
 
 void continue_http_connection()
 {
-  while (client.available()) {
+  unsigned int http_code = http_client.get(server_name);
 
-    char c = client.read();
-
-    Serial.write(c);
-
+  if(http_client.available())
+  {
+    Serial.println("Connection to server is stable");
+    
   }
-
-  // if the server's disconnected, stop the client:
-
-  if (!client.connected()) {
-
-    Serial.println();
-
-    Serial.println("disconnecting from server.");
-
-    client.stop();
-
-    // do nothing forevermore:
-
-    while (true);
-
+  else 
+  {
+    Serial.println("Connection to server lost!");
+    while(true);
   }
 }
+
 
 void setup_wifi_connection()
 {
@@ -128,7 +113,7 @@ void setup_wifi_connection()
   }
 
   // attempt to connect to WiFi network:
-  while (status != WL_CONNECTED) 
+  while (status != WL_CONNECTED)
   {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(ssid);
