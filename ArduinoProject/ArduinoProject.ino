@@ -7,6 +7,7 @@
 #include <Bridge.h>
 #include <HttpClient.h>
 
+
 ArduinoLEDMatrix matrix;
 
 const char *ssid = WIFI_SSID;
@@ -21,10 +22,13 @@ WiFiClient wifi_client;
 HttpClient http_client;
 
 //const char * server_name = "www.google.com";    // name address for Google (using DNS)
-const char * server_name = "http://api.openweathermap.org/data/2.5/weather?q=Timisoara,RO&APPID=xxx";
+String city_name = "Timisoara";
+String country_code = "RO";
+String api_key = "xxx";
+String server_url = "http://api.openweathermap.org/data/2.5/weather?q=" + city_name + "," + country_code + "&APPID=" + api_key;
 int loop_counter = 0;
 
-
+String json_buffer;
 
 void setup() 
 {
@@ -33,10 +37,8 @@ void setup()
 
   init_matrix("UNO", 1000);
 
-  while (!Serial) 
-  {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
+  while (!Serial);
+     // wait for serial port to connect. Needed for native USB port only
   
   setup_wifi_connection();
 
@@ -64,35 +66,45 @@ void setup_http_connection()
 {
   Serial.println("\nStarting connection to server...");
 
-  unsigned int http_code = http_client.get(server_name);
+  http_client.begin(server_url);
 
   if(http_client.available())
   {
-    Serial.println("Connected to server successfully!");
+    Serial.println("Sa mori tu ca merge");
   }
   else
   {
-    Serial.println("Connection to server failed!");
-    while(true);
+    Serial.println("Ai belit pl vere");
+    while(true);;
   }
-  
 }
 
 
 void continue_http_connection()
 {
-  unsigned int http_code = http_client.get(server_name);
+  unsigned int http_code = http_client.get(server_url);
 
   if(http_client.available())
   {
     Serial.println("Connection to server is stable");
     
+    Serial.println("Getting data from server...");
+
+    json_buffer = http_get_json_string();
+
+    Serial.println(server_url);
   }
   else 
   {
     Serial.println("Connection to server lost!");
     while(true);
   }
+}
+
+
+String http_get_json_string()
+{
+  return "";
 }
 
 
