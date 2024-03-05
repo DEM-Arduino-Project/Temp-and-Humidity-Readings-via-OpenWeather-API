@@ -7,7 +7,7 @@
 #include <Bridge.h>
 #include <HttpClient.h>
 
-
+#define WIFI_DEBUG 0
 ArduinoLEDMatrix matrix;
 
 const char *ssid = WIFI_SSID;
@@ -26,12 +26,15 @@ String city_name = "Timisoara";
 String country_code = "RO";
 String api_key = "xxx";
 String server_url = "http://api.openweathermap.org/data/2.5/weather?q=" + city_name + "," + country_code + "&APPID=" + api_key;
+
 int loop_counter = 0;
 
 String json_buffer;
 
 void setup() 
 {
+
+  server_url = "www.google.com";
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
 
@@ -42,7 +45,8 @@ void setup()
   
   setup_wifi_connection();
 
-  //print_initial_wifi_status();
+  if(WIFI_DEBUG == 1)
+    print_initial_wifi_status();
 
   setup_http_connection();
 }
@@ -53,7 +57,9 @@ void loop()
   delay(10000);
 
   print_loop_counter();
-  //print_current_wifi_status();
+  
+  if(WIFI_DEBUG == 1)
+    print_current_wifi_status();
 
   continue_http_connection();
 
@@ -68,15 +74,13 @@ void setup_http_connection()
 
   http_client.begin(server_url);
 
-  if(http_client.available())
+  if(!http_client.available())
   {
-    Serial.println("Sa mori tu ca merge");
+    Serial.println("Connection to server failed!");
+    while(true);
   }
-  else
-  {
-    Serial.println("Ai belit pl vere");
-    while(true);;
-  }
+
+  Serial.println("Connection to server was successful!");
 }
 
 
@@ -90,7 +94,7 @@ void continue_http_connection()
     
     Serial.println("Getting data from server...");
 
-    json_buffer = http_get_json_string();
+    http_get_json_string();
 
     Serial.println(server_url);
   }
@@ -102,9 +106,19 @@ void continue_http_connection()
 }
 
 
-String http_get_json_string()
+void http_get_json_string()
 {
-  return "";
+  char c;
+  for(int i = 0; i < 10000; i++)
+  {
+    c = http_client.read();
+    Serial.print(c);
+
+    if(i % 100 == 0)
+      Serial.println();
+  }
+
+  Serial.println(json_buffer);
 }
 
 
