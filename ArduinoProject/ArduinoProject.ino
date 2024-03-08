@@ -19,8 +19,7 @@ StaticJsonDocument<200> json_doc;
 DeserializationError err;
 
 int led =  LED_BUILTIN;
-int status = WL_IDLE_STATUS;
-
+int wifi_status = WL_IDLE_STATUS;
 int loop_counter = 0;
 
 void setup() 
@@ -162,13 +161,13 @@ void setup_wifi_connection()
   }
 
   // attempt to connect to WiFi network:
-  while (status != WL_CONNECTED)
+  while (wifi_status != WL_CONNECTED)
   {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(WIFI_SSID);
 
     // Connect to WPA/WPA2 network:
-    status = WiFi.begin(WIFI_SSID, WIFI_PASS);
+    wifi_status = WiFi.begin(WIFI_SSID, WIFI_PASS);
 
     // wait 5 seconds for connection:
     delay(5000);
@@ -180,7 +179,6 @@ void setup_wifi_connection()
   if(WIFI_DEBUG == 1)
     print_initial_wifi_status();
 }
-
 
 void init_matrix(String text, unsigned long delay_ms)
 {
