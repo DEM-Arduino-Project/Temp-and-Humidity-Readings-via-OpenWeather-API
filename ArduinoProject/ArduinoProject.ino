@@ -1,126 +1,149 @@
+// LIBRARIES
 #include "ArduinoGraphics.h"
 #include "Arduino_LED_Matrix.h"
+#include <WiFiS3.h>
+#include <ArduinoJson.h>
 #include "Arduino_Wifi_Connect.h"
-#include "WiFiS3.h"
-#include <WiFiClient.h>
-#include <Arduino_JSON.h>
-#include <Bridge.h>
-#include <HttpClient.h>
+#include <string.h>
+// DEBUG SWITCH
 
 #define WIFI_DEBUG 0
+#define SHOW_SERVER_DATA 0
+
 ArduinoLEDMatrix matrix;
+WiFiClient wifi_client;
 
-const char *ssid = WIFI_SSID;
-const char *pass = WIFI_PASS;
+String http_string;
+String json_buffer;
+StaticJsonDocument<200> json_doc;
+DeserializationError err;
 
-int keyIndex = 0;  
 int led =  LED_BUILTIN;
 int status = WL_IDLE_STATUS;
 
-WiFiServer server(80);
-WiFiClient wifi_client;
-HttpClient http_client;
-
-//const char * server_name = "www.google.com";    // name address for Google (using DNS)
-String city_name = "Timisoara";
-String country_code = "RO";
-String api_key = "xxx";
-String server_url = "http://api.openweathermap.org/data/2.5/weather?q=" + city_name + "," + country_code + "&APPID=" + api_key;
-
 int loop_counter = 0;
-
-String json_buffer;
 
 void setup() 
 {
-
-  server_url = "www.google.com";
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
 
+  // init the LED matrix
   init_matrix("UNO", 1000);
 
-  while (!Serial);
-     // wait for serial port to connect. Needed for native USB port only
+  while (!Serial); // wait for serial port to connect. Needed for native USB port only
   
+  // init wifi and check connection
   setup_wifi_connection();
 
+  // print wifi connection data
   if(WIFI_DEBUG == 1)
     print_initial_wifi_status();
-
-  setup_http_connection();
 }
 
 void loop() 
 {
-  // check the network connection once every 10 seconds:
-  delay(10000);
+  delay(10000); 
 
-  print_loop_counter();
+  matrix_print_text("    Hello World!    ", 50, 0);
+
+  // initialize server connection
+  setup_http_connection();
+
+  // get data
+  parse_json_buffer();
+
+  // print api data
+
+  String temp = "Temperature : " + String(get_temp()) + "C";
+  String humidity = "Humidity : " + String(get_humidity()) + "%";
+
+  Serial.println(temp);
+  Serial.println(humidity);
+
+  matrix_print_text("    " + temp, 50, 0);
+
+  matrix_print_text("    " + humidity, 50, 0);
+
+  Serial.println();
   
-  if(WIFI_DEBUG == 1)
-    print_current_wifi_status();
-
-  continue_http_connection();
-
-  matrix_print_text("    DECI EU NU CRED CA MERGE ASTA    ", 50, 0);
+  // reset connection
+  wifi_client.stop();
 }
 
+void parse_json_buffer()
+{
+  // get the api key data
+  http_string = get_json();
 
+  // get the standalone json string
+  json_buffer = http_string.substring(http_string.indexOf('{'));
+
+  if (SHOW_SERVER_DATA == 1)
+    Serial.println(json_buffer);
+  
+  // check for json parse error
+  err = deserializeJson(json_doc, json_buffer);
+
+  if(err)
+  {
+    Serial.println("Error parsing JSON");
+    Serial.println(err.f_str());
+    return;
+  }
+
+  Serial.println("Data read successfully");
+  Serial.println();
+}
+
+float get_temp()
+{
+  return (float(json_doc["main"]["temp"]) - 273.15);
+} 
+
+float get_humidity()
+{
+  return (json_doc["main"]["humidity"]);
+}
 
 void setup_http_connection()
 {
-  Serial.println("\nStarting connection to server...");
+  Serial.println("Attempting to connect to " + String(HOST_NAME));
 
-  http_client.begin(server_url);
-
-  if(!http_client.available())
+  // connect to web server on port 80:
+  if (wifi_client.connect(HOST_NAME, HTTP_PORT)) 
   {
-    Serial.println("Connection to server failed!");
-    while(true);
-  }
+    // if connected:
+    Serial.println("Connected to server succesfully.");
 
-  Serial.println("Connection to server was successful!");
-}
-
-
-void continue_http_connection()
-{
-  unsigned int http_code = http_client.get(server_url);
-
-  if(http_client.available())
-  {
-    Serial.println("Connection to server is stable");
-    
-    Serial.println("Getting data from server...");
-
-    http_get_json_string();
-
-    Serial.println(server_url);
-  }
+    // make a HTTP request:
+    // send HTTP header
+    wifi_client.println(HTTP_METHOD + " " + PATH_NAME + " HTTP/1.1");
+    wifi_client.println("Host: " + String(HOST_NAME));
+    wifi_client.println("Connection: close");
+    wifi_client.println();  // end HTTP header
+  } 
   else 
-  {
-    Serial.println("Connection to server lost!");
-    while(true);
+  {  
+    // if not connected:
+    Serial.println("Connection to server failed.");
   }
 }
 
-
-void http_get_json_string()
+String get_json()
 {
-  char c;
-  for(int i = 0; i < 10000; i++)
+  String buffer;
+  while (wifi_client.connected()) 
   {
-    c = http_client.read();
-    Serial.print(c);
-
-    if(i % 100 == 0)
-      Serial.println();
+    if (wifi_client.available()) 
+    {
+      // read an incoming byte from the server and print it to serial monitor:
+      buffer = wifi_client.readString();
+    }
   }
 
-  Serial.println(json_buffer);
+  return buffer;
 }
-
 
 void setup_wifi_connection()
 {
@@ -142,16 +165,20 @@ void setup_wifi_connection()
   while (status != WL_CONNECTED)
   {
     Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network:
-    status = WiFi.begin(ssid, pass);
+    Serial.println(WIFI_SSID);
 
-    // wait 10 seconds for connection:
-    delay(10000);
+    // Connect to WPA/WPA2 network:
+    status = WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+    // wait 5 seconds for connection:
+    delay(5000);
   }
 
   // you're connected now, so print out the data:
-  Serial.print("You're connected to the network");
+  Serial.println("You're connected to the network!");
+
+  if(WIFI_DEBUG == 1)
+    print_initial_wifi_status();
 }
 
 
