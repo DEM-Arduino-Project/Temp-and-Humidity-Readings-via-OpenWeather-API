@@ -22,5 +22,3 @@ String API_KEY = "xxx";
 String CITY_NAME = "Timisoara";
 String COUNTRY_CODE = "RO";
 String PATH_NAME   = "/data/2.5/weather?q=" + CITY_NAME + "," + COUNTRY_CODE + "&APPID=" + API_KEY;
-
-

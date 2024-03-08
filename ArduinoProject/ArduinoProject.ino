@@ -5,9 +5,11 @@
 #include <ArduinoJson.h>
 #include "Arduino_Wifi_Connect.h"
 #include <string.h>
-// DEBUG SWITCH
 
+// DEBUG SWITCH
 #define WIFI_DEBUG 0
+
+// FULL SERVER DATA SWITCH
 #define SHOW_SERVER_DATA 0
 
 ArduinoLEDMatrix matrix;
@@ -52,22 +54,57 @@ void loop()
   // get data
   parse_json_buffer();
 
-  // print api data
+  // verify api key
 
-  String temp = "Temperature : " + String(get_temp()) + "C";
-  String humidity = "Humidity : " + String(get_humidity()) + "%";
+  if(get_api_code() != 200)
+  {
+    Serial.println("Invalid API KEY!");
+    return;
+  }
 
-  Serial.println(temp);
-  Serial.println(humidity);
-
-  matrix_print_text("    " + temp, 50, 0);
-
-  matrix_print_text("    " + humidity, 50, 0);
+  // show api data
+  print_api_data();
 
   Serial.println();
   
   // reset connection
   wifi_client.stop();
+}
+
+void print_api_data()
+{
+  String country = "Country : " + get_country();
+  String city = "City : " + get_city();
+
+  String longitude = "Longitude : " + String(get_longitude());
+  String latitude = "Latitude : " + String(get_latitude());
+
+  String temp = "Temperature : " + String(get_temp()) + "C";
+  String temp_max = "Max Temperature : " + String(get_temp_max()) + "C";
+  String temp_min = "Min Temperature : " + String(get_temp_min()) + "C";
+  String temp_feels_like = "Feels like : " + String(get_temp_feels_like()) + "C";
+
+  String humidity = "Humidity : " + String(get_humidity()) + "%";
+  String clouds = "Cloud coverage : " + String(get_clouds()) + "%";
+  String wind_speed = "Wind speed : " + String(get_wind_speed()) + " m/s";
+
+  Serial.println(country);
+  Serial.println(city);
+
+  Serial.println(longitude);
+  Serial.println(latitude);
+
+  Serial.println(temp);
+  Serial.println(temp_max);
+  Serial.println(temp_min);
+  Serial.println(temp_feels_like);
+
+  Serial.println(humidity);
+  Serial.println(clouds);
+  Serial.println(wind_speed);
+
+  matrix_print_text("    " + temp, 50, 0);
+  matrix_print_text("    " + humidity, 50, 0);
 }
 
 void parse_json_buffer()
@@ -95,10 +132,65 @@ void parse_json_buffer()
   Serial.println();
 }
 
+int get_api_code()
+{
+  return int(json_doc["cod"]);
+}
+
+String get_country()
+{
+  return json_doc["sys"]["country"];
+}
+
+String get_city()
+{
+  return json_doc["name"];
+}
+
+float get_longitude()
+{
+  return float(json_doc["coord"]["lon"]);
+}
+
+float get_latitude()
+{
+  return float(json_doc["coord"]["lat"]);
+}
+
 float get_temp()
 {
-  return (float(json_doc["main"]["temp"]) - 273.15);
-} 
+  return float(json_doc["main"]["temp"]) - 273.15;
+}
+
+float get_temp_min()
+{
+  return float(json_doc["main"]["temp_min"]) - 273.15;
+}
+
+float get_temp_max()
+{
+  return float(json_doc["main"]["temp_max"]) - 273.15;
+}
+
+float get_temp_feels_like()
+{
+  return float(json_doc["main"]["feels_like"]) - 273.15;
+}
+
+float get_wind_speed()
+{
+  return float(json_doc["wind"]["speed"]);
+}
+
+float get_clouds()
+{
+  return int(json_doc["clouds"]["all"]);
+}
+
+String get_weather()
+{
+  return json_doc["weather"]["main"];
+}
 
 float get_humidity()
 {
