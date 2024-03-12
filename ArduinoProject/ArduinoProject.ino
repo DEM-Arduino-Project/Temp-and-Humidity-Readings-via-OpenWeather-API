@@ -4,15 +4,21 @@
 #include <WiFiS3.h>
 #include <ArduinoJson.h>
 #include "Arduino_Wifi_Connect.h"
-#include <string.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
 // DEBUG SWITCH
-#define WIFI_DEBUG 0
+#define WIFI_DEBUG 1
 
 // FULL SERVER DATA SWITCH
-#define SHOW_SERVER_DATA 0
+#define SHOW_SERVER_DATA 1
+
+// LCD
+#define LCD 0
 
 ArduinoLEDMatrix matrix;
+LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLLUMNS, LCD_ROWS);
+
 WiFiClient wifi_client;
 
 String http_string;
@@ -29,11 +35,15 @@ void setup()
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
 
+  
   // init the LED matrix
   init_matrix("UNO", 1000);
 
   while (!Serial); // wait for serial port to connect. Needed for native USB port only
   
+  if(LCD == 1)
+    init_lcd();
+
   // init wifi and check connection
   setup_wifi_connection();
 
@@ -47,6 +57,12 @@ void loop()
   delay(10000); 
 
   matrix_print_text("    Hello World!    ", 50, 0);
+
+  if(SHOW_SERVER_DATA == 0)
+  {
+    wifi_client.stop();
+    return;
+  }
 
   // initialize server connection
   setup_http_connection();
@@ -71,6 +87,30 @@ void loop()
   wifi_client.stop();
 }
 
+
+void init_lcd()
+{
+  Serial.println("CONNECTING");
+  //initialize lcd screen
+  lcd.begin(LCD_COLLUMNS, LCD_ROWS);
+  lcd.init();
+  lcd.clear();
+  // turn on the backlight
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("Hai sa bem coaie");
+
+  Serial.println("PRINTED");
+  delay(10000);
+
+  lcd.setCursor(0, 1);
+  lcd.print("Ma arunc pe geam");
+  
+  Serial.println("CONNECTED");
+}
+
+
 void print_api_data()
 {
   String country = "Country : " + get_country();
@@ -79,10 +119,10 @@ void print_api_data()
   String longitude = "Longitude : " + String(get_longitude());
   String latitude = "Latitude : " + String(get_latitude());
 
-  String temp = "Temperature : " + String(get_temp()) + "C";
-  String temp_max = "Max Temperature : " + String(get_temp_max()) + "C";
-  String temp_min = "Min Temperature : " + String(get_temp_min()) + "C";
-  String temp_feels_like = "Feels like : " + String(get_temp_feels_like()) + "C";
+  String temp = "Temperature : " + String(get_temp()) + String(char(223)) + "C";
+  String temp_max = "Max Temperature : " + String(get_temp_max()) + String(char(223)) + "C";
+  String temp_min = "Min Temperature : " + String(get_temp_min()) + String(char(223)) + "C";
+  String temp_feels_like = "Feels like : " + String(get_temp_feels_like()) + String(char(223)) + "C";
 
   String humidity = "Humidity : " + String(get_humidity()) + "%";
   String clouds = "Cloud coverage : " + String(get_clouds()) + "%";
