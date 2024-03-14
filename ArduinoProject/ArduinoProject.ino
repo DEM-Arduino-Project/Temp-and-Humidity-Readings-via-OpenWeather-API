@@ -1,20 +1,20 @@
 // LIBRARIES
 #include "ArduinoGraphics.h"
 #include "Arduino_LED_Matrix.h"
+#include "Arduino_Wifi_Connect.h"
 #include <WiFiS3.h>
 #include <ArduinoJson.h>
-#include "Arduino_Wifi_Connect.h"
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 
 // DEBUG SWITCH
-#define WIFI_DEBUG 1
+#define WIFI_DEBUG 0
 
 // FULL SERVER DATA SWITCH
-#define SHOW_SERVER_DATA 1
+#define SHOW_SERVER_DATA 0
 
 // LCD
-#define LCD 0
+#define LCD 1
 
 ArduinoLEDMatrix matrix;
 LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLLUMNS, LCD_ROWS);
@@ -46,10 +46,6 @@ void setup()
 
   // init wifi and check connection
   setup_wifi_connection();
-
-  // print wifi connection data
-  if(WIFI_DEBUG == 1)
-    print_initial_wifi_status();
 }
 
 void loop() 
@@ -99,7 +95,7 @@ void init_lcd()
   lcd.backlight();
 
   lcd.setCursor(0, 0);
-  lcd.print("Hai sa bem coaie");
+  lcd.print("Hai sa bem");
 
   Serial.println("PRINTED");
   delay(10000);
@@ -119,14 +115,14 @@ void print_api_data()
   String longitude = "Longitude : " + String(get_longitude());
   String latitude = "Latitude : " + String(get_latitude());
 
-  String temp = "Temperature : " + String(get_temp()) + String(char(223)) + "C";
-  String temp_max = "Max Temperature : " + String(get_temp_max()) + String(char(223)) + "C";
-  String temp_min = "Min Temperature : " + String(get_temp_min()) + String(char(223)) + "C";
-  String temp_feels_like = "Feels like : " + String(get_temp_feels_like()) + String(char(223)) + "C";
+  String temp = "Temperature : " + String(get_temp()) + "C";
+  String temp_max = "Max Temperature : " + String(get_temp_max()) + "C";
+  String temp_min = "Min Temperature : " + String(get_temp_min()) + "C";
+  String temp_feels_like = "Feels Like : " + String(get_temp_feels_like()) + "C";
 
   String humidity = "Humidity : " + String(get_humidity()) + "%";
-  String clouds = "Cloud coverage : " + String(get_clouds()) + "%";
-  String wind_speed = "Wind speed : " + String(get_wind_speed()) + " m/s";
+  String clouds = "Cloud Coverage : " + String(get_clouds()) + "%";
+  String wind_speed = "Wind Speed : " + String(get_wind_speed()) + " m/s";
 
   Serial.println(country);
   Serial.println(city);
@@ -245,7 +241,7 @@ void setup_http_connection()
   if (wifi_client.connect(HOST_NAME, HTTP_PORT)) 
   {
     // if connected:
-    Serial.println("Connected to server succesfully.");
+    Serial.println("Connected to server succesfully.\n");
 
     // make a HTTP request:
     // send HTTP header
@@ -253,6 +249,7 @@ void setup_http_connection()
     wifi_client.println("Host: " + String(HOST_NAME));
     wifi_client.println("Connection: close");
     wifi_client.println();  // end HTTP header
+    
   } 
   else 
   {  
@@ -310,6 +307,8 @@ void setup_wifi_connection()
 
   if(WIFI_DEBUG == 1)
     print_initial_wifi_status();
+
+  Serial.println();
 }
 
 void init_matrix(String text, unsigned long delay_ms)
