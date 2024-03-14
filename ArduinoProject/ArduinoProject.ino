@@ -11,7 +11,7 @@
 #define WIFI_DEBUG 0
 
 // FULL SERVER DATA SWITCH
-#define SHOW_SERVER_DATA 0
+#define SHOW_SERVER_DATA 1
 
 // LCD
 #define LCD 1
@@ -35,15 +35,24 @@ void setup()
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
 
-  
   // init the LED matrix
   init_matrix("UNO", 1000);
 
   while (!Serial); // wait for serial port to connect. Needed for native USB port only
   
-  if(LCD == 1)
+  if(LCD)
+  {
     init_lcd();
 
+    lcd.setCursor(0, 0);
+    lcd.print("Hello World!");
+
+    lcd.setCursor(0, 1);
+    lcd.print("Initialising...");
+
+    lcd.clear();
+  }
+  
   // init wifi and check connection
   setup_wifi_connection();
 }
@@ -71,6 +80,18 @@ void loop()
   if(get_api_code() != 200)
   {
     Serial.println("Invalid API KEY!");
+
+    if(LCD)
+    {
+      lcd.clear();
+
+      lcd.setCursor(0, 0);
+      lcd.print("Invalid Key");
+
+      lcd.setCursor(0, 1);
+      lcd.print("Code 404");
+    }
+
     return;
   }
 
@@ -86,24 +107,12 @@ void loop()
 
 void init_lcd()
 {
-  Serial.println("CONNECTING");
   //initialize lcd screen
   lcd.begin(LCD_COLLUMNS, LCD_ROWS);
   lcd.init();
   lcd.clear();
   // turn on the backlight
   lcd.backlight();
-
-  lcd.setCursor(0, 0);
-  lcd.print("Hai sa bem");
-
-  Serial.println("PRINTED");
-  delay(10000);
-
-  lcd.setCursor(0, 1);
-  lcd.print("Ma arunc pe geam");
-  
-  Serial.println("CONNECTED");
 }
 
 
@@ -115,12 +124,12 @@ void print_api_data()
   String longitude = "Longitude : " + String(get_longitude());
   String latitude = "Latitude : " + String(get_latitude());
 
-  String temp = "Temperature : " + String(get_temp()) + "C";
+  String temp = "Temp: " + String(get_temp()) + "C";
   String temp_max = "Max Temperature : " + String(get_temp_max()) + "C";
   String temp_min = "Min Temperature : " + String(get_temp_min()) + "C";
   String temp_feels_like = "Feels Like : " + String(get_temp_feels_like()) + "C";
 
-  String humidity = "Humidity : " + String(get_humidity()) + "%";
+  String humidity = "Humid: " + String(get_humidity()) + "%";
   String clouds = "Cloud Coverage : " + String(get_clouds()) + "%";
   String wind_speed = "Wind Speed : " + String(get_wind_speed()) + " m/s";
 
@@ -138,6 +147,17 @@ void print_api_data()
   Serial.println(humidity);
   Serial.println(clouds);
   Serial.println(wind_speed);
+
+  if(LCD)
+  {
+    lcd.clear();
+
+    lcd.setCursor(0, 0);
+    lcd.print(temp);
+
+    lcd.setCursor(0, 1);
+    lcd.print(humidity);
+  }
 
   matrix_print_text("    " + temp, 50, 0);
   matrix_print_text("    " + humidity, 50, 0);
@@ -237,12 +257,30 @@ void setup_http_connection()
 {
   Serial.println("Attempting to connect to " + String(HOST_NAME));
 
+  if(LCD)
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Connecting");
+    lcd.setCursor(0, 1);
+    lcd.print("to server...");
+  }
+
   // connect to web server on port 80:
   if (wifi_client.connect(HOST_NAME, HTTP_PORT)) 
   {
     // if connected:
     Serial.println("Connected to server succesfully.\n");
 
+    if(LCD)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Success!");
+      lcd.setCursor(0, 1);
+      lcd.print("Requesting data.");
+    }
+    
     // make a HTTP request:
     // send HTTP header
     wifi_client.println(HTTP_METHOD + " " + PATH_NAME + " HTTP/1.1");
@@ -255,6 +293,15 @@ void setup_http_connection()
   {  
     // if not connected:
     Serial.println("Connection to server failed.");
+
+    if(LCD)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Connection");
+      lcd.setCursor(0, 1);
+      lcd.print("failed.");
+    }
   }
 }
 
@@ -278,6 +325,15 @@ void setup_wifi_connection()
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) 
   {
+    if(LCD)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("WiFi Module");
+      lcd.setCursor(0, 1);
+      lcd.print("failure");
+    }
+
     Serial.print("Communication with WiFi module failed!");
     // don't continue
     while (true);
@@ -286,6 +342,13 @@ void setup_wifi_connection()
   String fv = WiFi.firmwareVersion();
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) 
   {
+    if(LCD)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Firmware error");
+    }
+
     Serial.print("Please upgrade the firmware");
   }
 
@@ -293,6 +356,14 @@ void setup_wifi_connection()
   while (wifi_status != WL_CONNECTED)
   {
     Serial.print("Attempting to connect to WPA SSID: ");
+
+    if(LCD)
+    {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Connecting...");
+    }
+
     Serial.println(WIFI_SSID);
 
     // Connect to WPA/WPA2 network:
@@ -304,6 +375,18 @@ void setup_wifi_connection()
 
   // you're connected now, so print out the data:
   Serial.println("You're connected to the network!");
+
+  if(LCD)
+  {
+    lcd.clear();
+
+    lcd.setCursor(0, 0);
+    lcd.print("Connected");
+
+    lcd.setCursor(0, 1);
+    lcd.print("to network!");
+  }
+  
 
   if(WIFI_DEBUG == 1)
     print_initial_wifi_status();
